@@ -10,3 +10,11 @@ install-sqlc:
 
 migrate-create:
 	goose -dir storage/repo/migrations -s create $(NAME) sql
+
+generate:
+	sqlc generate
+
+git-clean:
+	git checkout main
+	git remote update origin --prune
+	git branch | grep -v "\main\b" | xargs git branch -dev
