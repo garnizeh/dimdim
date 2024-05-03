@@ -1,0 +1,9 @@
+version: "2"
+sql:
+- schema: "storage/repo/migrations"
+  queries: "storage/repo/queries.sql"
+  engine: "sqlite"
+  gen:
+    go:
+      package: "repo"
+      out: "storage/repo"
