@@ -18,3 +18,7 @@ git-clean:
 	git checkout main
 	git remote update origin --prune
 	git branch | grep -v "\smain\b" | xargs git branch -D
+
+go:
+	go mod tidy
+	go mod vendor
