@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"os"
 
 	"github.com/garnizeH/dimdim/storage"
+	"github.com/garnizeH/dimdim/storage/repo"
 )
 
 func main() {
@@ -16,6 +18,9 @@ func main() {
 func run() error {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	logger.Info("app starting")
+	slog.SetDefault(logger)
+
+	ctx := context.Background()
 
 	// TODO: get this value from config
 	dsn := ":memory:"
@@ -37,6 +42,16 @@ func run() error {
 			)
 		}
 	}()
+
+	qry := repo.New(db)
+	if _, err := qry.ListAllTags(ctx); err != nil {
+		logger.Error(
+			"failed to get all tags",
+			"error", err,
+		)
+
+		return err
+	}
 
 	logger.Info("app finished")
 	return nil
