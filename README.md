@@ -16,8 +16,12 @@ Personal project to manage domestic finances.
 
 ### Make Rules
 
-`make build`
+To install goose and sqlc:
+```
+make install
+```
 
-`make run`
-
-`make docker`
+To create a new migration file in sql: `make migrate-create NAME=<migration-related-name>`
+```
+make migrate-create NAME=add-table-users
+```
