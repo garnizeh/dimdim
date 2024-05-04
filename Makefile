@@ -19,6 +19,10 @@ git-clean:
 	git remote update origin --prune
 	git branch | grep -v "\smain\b" | xargs git branch -D
 
-go:
+.PHONY: dependencies
+dependencies:
 	go mod tidy
 	go mod vendor
+
+build: dependencies
+	go build -ldflags="-s -w" -o ./bin/app
