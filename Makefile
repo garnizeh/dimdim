@@ -25,4 +25,4 @@ dependencies:
 	go mod vendor
 
 build: dependencies
-	go build -ldflags="-s -w" -o ./bin/app
+	go build -ldflags="-s -w" -o ./bin/app ./cmd/app/main.go
