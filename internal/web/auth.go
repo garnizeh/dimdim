@@ -15,6 +15,7 @@ import (
 
 const (
 	minPasswordLength = 1
+	contextKeyEmail   = "email"
 )
 
 var (
@@ -22,6 +23,7 @@ var (
 	ErrInvalidPassword   = errors.New("invalid password")
 	ErrInvalidName       = errors.New("invalid name")
 	ErrNotMatchPasswords = errors.New("passwords do not match")
+	ErrInvalidToken      = errors.New("invalid token")
 )
 
 type signinRequest struct {
@@ -62,13 +64,13 @@ func (h *Handler) Signin(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	p, err := h.user.Signin(ctx, r.Email, r.Password)
+	u, err := h.user.Signin(ctx, r.Email, r.Password)
 	if err != nil {
 		setFields()
 		return h.errTmpl("signin", err.Error())
 	}
 
-	h.sess.Put(ctx, "id", p.ID)
+	h.sess.Put(ctx, contextKeyEmail, u.Email)
 	return c.Redirect(http.StatusSeeOther, "/")
 }
 
@@ -141,12 +143,12 @@ func (h *Handler) SignupToken(c echo.Context) error {
 	token := c.Param("token")
 
 	ctx := c.Request().Context()
-	u, err := h.user.ValidateToken(ctx, token)
+	u, err := h.user.ValidateSignupToken(ctx, token)
 	if err != nil {
 		return h.errTmpl("resend-signup-token", err.Error())
 	}
 
-	h.sess.Put(ctx, "id", u.ID)
+	h.sess.Put(ctx, contextKeyEmail, u.Email)
 	return c.Redirect(http.StatusSeeOther, "/")
 }
 
@@ -160,11 +162,11 @@ func (h *Handler) Signout(c echo.Context) error {
 	return c.Redirect(http.StatusFound, "/auth/signin")
 }
 
-type resendSignupRequest struct {
+type resendSignupTokenRequest struct {
 	Email string `form:"email"`
 }
 
-func (r *resendSignupRequest) validate(c echo.Context, input *bluemonday.Policy) error {
+func (r *resendSignupTokenRequest) validate(c echo.Context, input *bluemonday.Policy) error {
 	r.Email = input.Sanitize(strings.TrimSpace(r.Email))
 	email, err := mail.ParseAddress(r.Email)
 	if err != nil {
@@ -177,7 +179,7 @@ func (r *resendSignupRequest) validate(c echo.Context, input *bluemonday.Policy)
 }
 
 func (h *Handler) ResendSignupToken(c echo.Context) error {
-	r := resendSignupRequest{}
+	r := resendSignupTokenRequest{}
 
 	setFields := func() {
 		setSessionDataFields(c, struct {
@@ -209,6 +211,125 @@ func (h *Handler) ResendSignupToken(c echo.Context) error {
 	return pageRendererWithFlashMsg(c, "signin", "check your mailbox")
 }
 
+type resetPasswordRequest struct {
+	Email string `form:"email"`
+}
+
+func (r *resetPasswordRequest) validate(c echo.Context, input *bluemonday.Policy) error {
+	r.Email = input.Sanitize(strings.TrimSpace(r.Email))
+	email, err := mail.ParseAddress(r.Email)
+	if err != nil {
+		return ErrInvalidEmail
+	}
+
+	r.Email = email.Address
+
+	return nil
+}
+
+func (h *Handler) ResetPassword(c echo.Context) error {
+	r := resetPasswordRequest{}
+
+	setFields := func() {
+		setSessionDataFields(c, struct {
+			Email string
+		}{
+			Email: r.Email,
+		})
+	}
+
+	if err := h.validateRequest(c, &r, "reset-password"); err != nil {
+		setFields()
+		return err
+	}
+
+	ctx := c.Request().Context()
+	err := h.user.ResetPassword(ctx, h.baseURL, r.Email)
+	if err != nil {
+		setFields()
+
+		return h.errTmpl("reset-password", err.Error())
+	}
+
+	return pageRendererWithFlashMsg(c, "signin", "check your mailbox")
+}
+
+func (h *Handler) ResetPasswordToken(c echo.Context) error {
+	token := c.Param("token")
+
+	ctx := c.Request().Context()
+	if err := h.user.ResetPasswordToken(ctx, token); err != nil {
+		return h.errTmpl("reset-password", err.Error())
+	}
+
+	setSessionDataFields(c, struct {
+		Token    string
+		Password string
+		Confirm  string
+	}{
+		Token:    token,
+		Password: "",
+		Confirm:  "",
+	})
+	return pageRendererWithFlashMsg(c, "reset-password-token", "")
+}
+
+type changePasswordRequest struct {
+	Token    string `form:"token"`
+	Password string `form:"password"`
+	Confirm  string `form:"confirm"`
+}
+
+func (r *changePasswordRequest) validate(c echo.Context, input *bluemonday.Policy) error {
+	r.Token = strings.TrimSpace(r.Token)
+	if r.Token == "" {
+		return ErrInvalidToken
+	}
+
+	r.Password = strings.TrimSpace(r.Password)
+	r.Confirm = strings.TrimSpace(r.Confirm)
+	if r.Password == "" || len(r.Password) < minPasswordLength {
+		return ErrInvalidPassword
+	}
+	if r.Password != r.Confirm {
+		return ErrNotMatchPasswords
+	}
+
+	return nil
+}
+
+func (h *Handler) ChangePasswordWithToken(c echo.Context) error {
+	r := changePasswordRequest{}
+
+	setFields := func() {
+		setSessionDataFields(c, struct {
+			Token    string
+			Password string
+			Confirm  string
+		}{
+			Token:    r.Token,
+			Password: r.Password,
+			Confirm:  r.Confirm,
+		})
+	}
+
+	if err := h.validateRequest(c, &r, "reset-password-token"); err != nil {
+		setFields()
+		return err
+	}
+
+	ctx := c.Request().Context()
+	u, err := h.user.ChangePasswordWithToken(ctx, r.Token, r.Password)
+	if err != nil {
+		setFields()
+		
+		return h.errTmpl("reset-password-token", err.Error())
+	}
+
+	h.sess.Put(ctx, contextKeyEmail, u.Email)
+	return c.Redirect(http.StatusSeeOther, "/")
+}
+
 func sessionDataMiddleware(sessionManager *scs.SessionManager, users *user.Service, appName string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -221,15 +342,14 @@ func sessionDataMiddleware(sessionManager *scs.SessionManager, users *user.Servi
 			sessionData := SessionData{AppName: appName}
 
 			ctx := req.Context()
-			id := sessionManager.GetString(ctx, "id")
-			if id != "" {
-				user, err := users.GetUser(ctx, id)
+			email := sessionManager.GetString(ctx, contextKeyEmail)
+			if email != "" {
+				user, err := users.GetUser(ctx, email)
 				if err != nil {
 					// TODO: need to clear the session/cookie and redirect to signin.
-					panic(fmt.Sprintf("failed to get user with id %q: %v", id, err))
+					panic(fmt.Sprintf("failed to get user with email %q: %v", email, err))
 				}
 
-				sessionData.ID = user.ID
 				sessionData.Email = user.Email
 				sessionData.Name = user.Name
 			}

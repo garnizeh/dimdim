@@ -16,7 +16,6 @@ import (
 
 type SessionData struct {
 	AppName   string
-	ID        string
 	Email     string
 	Name      string
 	ErrMsg    string
@@ -26,7 +25,7 @@ type SessionData struct {
 }
 
 func (sd SessionData) SignedIn() bool {
-	return sd.ID != ""
+	return sd.Email != ""
 }
 
 type Handler struct {
@@ -64,6 +63,14 @@ func (h *Handler) loadRoutesAuth(g *echo.Group, templates *embeded.Template) {
 	templates.NewView("signin", "base.tmpl", "messages.tmpl", "auth-links.tmpl", "auth/signin.tmpl")
 	g.GET("/signin", pageRenderer("signin"), signedOutMiddleware)
 	g.POST("/signin", h.Signin, signedOutMiddleware)
+
+	// reset password
+	templates.NewView("reset-password", "base.tmpl", "messages.tmpl", "auth-links.tmpl", "auth/reset-password.tmpl")
+	templates.NewView("reset-password-token", "base.tmpl", "messages.tmpl", "auth/reset-password-token.tmpl")
+	g.GET("/reset-password", pageRenderer("reset-password"), signedOutMiddleware)
+	g.GET("/reset-password/:token", h.ResetPasswordToken)
+	g.POST("/reset-password", h.ResetPassword, signedOutMiddleware)
+	g.POST("/reset-password-token", h.ChangePasswordWithToken, signedOutMiddleware)
 
 	// signup
 	templates.NewView("signup", "base.tmpl", "messages.tmpl", "auth-links.tmpl", "auth/signup.tmpl")

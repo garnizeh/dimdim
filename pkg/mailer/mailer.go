@@ -41,6 +41,26 @@ func NewMailSignup(baseURL, email, name, token string) *mail {
 	}
 }
 
+func NewMailPassword(baseURL, email, name, token string) *mail {
+	const endpoint = "/auth/reset-password/"
+	url := baseURL + endpoint + url.QueryEscape(token)
+	data := struct {
+		Name string
+		URL  string
+	}{
+		Name: name,
+		URL:  url,
+	}
+
+	const subject = "Change your password"
+
+	return &mail{
+		subject: subject,
+		to:      []string{email},
+		data:    data,
+	}
+}
+
 type Mailer struct {
 	auth      smtp.Auth
 	addr      string
