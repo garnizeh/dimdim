@@ -13,8 +13,16 @@ func (d Domain) IsDev() bool {
 }
 
 func (d Domain) URL(path ...string) string {
-	var result string
-	var err error
+	if strings.TrimSpace(string(d)) == "" {
+		// If this happens, it was a programming error because we expect that domain to be
+		// programmer provided, not user provided.
+		panic("invalid domain")
+	}
+
+	var (
+		result string
+		err    error
+	)
 	if d.IsDev() {
 		result, err = url.JoinPath("http://"+string(d), path...)
 	} else {
