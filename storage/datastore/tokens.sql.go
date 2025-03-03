@@ -61,16 +61,6 @@ func (q *Queries) DeleteSignupTokensByEmail(ctx context.Context, email string) e
 	return err
 }
 
-const deleteToken = `-- name: DeleteToken :exec
-UPDATE tokens SET deleted_at = CAST(unixepoch('subsecond') * 1000 AS INTEGER)
-WHERE token = ?
-`
-
-func (q *Queries) DeleteToken(ctx context.Context, token string) error {
-	_, err := q.db.ExecContext(ctx, deleteToken, token)
-	return err
-}
-
 const getPasswordTokenNotExpired = `-- name: GetPasswordTokenNotExpired :one
 SELECT token, type, email, expires_at, deleted_at FROM tokens
 WHERE token = ? AND type = 'PASSWORD' AND expires_at >= ? AND deleted_at = 0

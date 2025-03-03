@@ -236,7 +236,7 @@ func (s *Service) ValidateSignupToken(
 			return err
 		}
 
-		if err := queries.DeleteToken(ctx, registeredToken.Email); err != nil {
+		if err := queries.DeleteSignupTokensByEmail(ctx, registeredToken.Email); err != nil {
 			return err
 		}
 
@@ -404,7 +404,7 @@ func (s *Service) ChangePasswordWithToken(
 			return err
 		}
 
-		if err := queries.DeleteToken(ctx, registeredToken.Token); err != nil {
+		if err := queries.DeletePasswordTokensByEmail(ctx, registeredToken.Email); err != nil {
 			return err
 		}
 

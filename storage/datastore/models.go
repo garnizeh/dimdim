@@ -4,12 +4,6 @@
 
 package datastore
 
-type Session struct {
-	Token  string
-	Data   []byte
-	Expiry float64
-}
-
 type Tag struct {
 	ID        int64
 	Name      string

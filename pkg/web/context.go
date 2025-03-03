@@ -48,16 +48,3 @@ func GetTime(ctx context.Context) time.Time {
 
 	return v.Now
 }
-
-func setStatusCode(ctx context.Context, statusCode int) {
-	v, ok := ctx.Value(key).(*Values)
-	if !ok {
-		return
-	}
-
-	v.StatusCode = statusCode
-}
-
-func setValues(ctx context.Context, v *Values) context.Context {
-	return context.WithValue(ctx, key, v)
-}

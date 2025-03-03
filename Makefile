@@ -21,8 +21,8 @@ generate:
 	sqlc generate
 
 dev-clean:
-	rm cmd/app/dimdim.db*
-	
+	rm tmp/data/*
+
 # ==============================================================================
 # Git management
 

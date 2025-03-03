@@ -9,7 +9,7 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/garnizeH/dimdim/embeded"
 	"github.com/garnizeH/dimdim/pkg/domain"
-	"github.com/garnizeH/dimdim/service/user"
+	"github.com/garnizeH/dimdim/service"
 	"github.com/labstack/echo/v4"
 	"github.com/microcosm-cc/bluemonday"
 )
@@ -32,19 +32,19 @@ type Handler struct {
 	baseURL string
 	sess    *scs.SessionManager
 	input   *bluemonday.Policy
-	user    *user.Service
+	service *service.Service
 }
 
 func NewHandler(
 	domain domain.Domain,
 	sess *scs.SessionManager,
-	user *user.Service,
+	service *service.Service,
 ) *Handler {
 	return &Handler{
 		baseURL: domain.URL(""),
 		sess:    sess,
 		input:   bluemonday.StrictPolicy(),
-		user:    user,
+		service: service,
 	}
 }
 
