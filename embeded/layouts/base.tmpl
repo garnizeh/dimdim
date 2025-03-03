@@ -6,6 +6,7 @@
     <meta name="description" content="Create short links for your long urls. Create an account and have them be ad-free!">
     <link rel="stylesheet" href="/static/css/roboto-700.min.css" async defer >
     <link rel="stylesheet" href="/static/css/pico.min.css" async defer>
+    <link rel="stylesheet" href="/static/css/pico.alerts.min.css" async defer>
     <link rel="stylesheet" href="/static/css/pico.colors.min.css" async defer>
     <link rel="stylesheet" href="/static/css/app.css" async defer>
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -31,8 +32,7 @@
     {{end}}
 
 	<main class="container" style="padding:1rem;padding-top:0;">
-        {{block "content" .}}
-        {{end}}
+        {{block "content" .}}{{end}}
 	</main>
 
     <footer class="container" style="padding-top:0">

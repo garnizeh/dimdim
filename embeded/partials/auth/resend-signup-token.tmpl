@@ -8,7 +8,6 @@
 
         {{if or .ErrMsg .FlashMsg}}
                 {{ block "messages" .}}{{ end}}
-
             </hgroup>
         {{end}}
 
@@ -20,7 +19,7 @@
 
             <button type="submit">Submit</button>
         </form>
-        <p><center>Don't have an account? <a href="/auth/signup">Signup.</a></center></p>
-        <p><center>Already have an account? <a href="/auth/signup">Signin.</a></center></p>
+
+        {{ block "auth-links" .}}{{ end}}
     </div>
 {{end}}

@@ -13,8 +13,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/garnizeH/dimdim/http/api/debug"
-	server "github.com/garnizeH/dimdim/http/web"
+	"github.com/garnizeH/dimdim/internal/api/debug"
+	server "github.com/garnizeH/dimdim/internal/web"
 	"github.com/garnizeH/dimdim/pkg/argon2id"
 	"github.com/garnizeH/dimdim/pkg/logger"
 	"github.com/garnizeH/dimdim/pkg/mailer"

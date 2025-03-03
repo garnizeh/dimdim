@@ -61,19 +61,19 @@ func (h *Handler) LoadRoutes(e *echo.Echo, templates *embeded.Template) {
 
 func (h *Handler) loadRoutesAuth(g *echo.Group, templates *embeded.Template) {
 	// signin
-	templates.NewView("signin", "base.tmpl", "messages.tmpl", "auth/signin.tmpl")
+	templates.NewView("signin", "base.tmpl", "messages.tmpl", "auth-links.tmpl", "auth/signin.tmpl")
 	g.GET("/signin", pageRenderer("signin"), signedOutMiddleware)
 	g.POST("/signin", h.Signin, signedOutMiddleware)
 
 	// signup
-	templates.NewView("signup", "base.tmpl", "messages.tmpl", "auth/signup.tmpl")
+	templates.NewView("signup", "base.tmpl", "messages.tmpl", "auth-links.tmpl", "auth/signup.tmpl")
 	g.GET("/signup", pageRenderer("signup"), signedOutMiddleware)
 	g.GET("/signup/:token", h.SignupToken)
 	g.POST("/signup", h.Signup, signedOutMiddleware)
 	g.GET("/signout", h.Signout, signedInMiddleware)
 
 	// resend signup token
-	templates.NewView("resend-signup-token", "base.tmpl", "messages.tmpl", "auth/resend-signup-token.tmpl")
+	templates.NewView("resend-signup-token", "base.tmpl", "messages.tmpl", "auth-links.tmpl", "auth/resend-signup-token.tmpl")
 	g.GET("/resend-confirmation-email", pageRenderer("resend-signup-token"), signedOutMiddleware)
 	g.POST("/resend-confirmation-email", h.ResendSignupToken, signedOutMiddleware)
 }
