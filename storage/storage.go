@@ -58,9 +58,9 @@ func NewDBForTest[Queries any](t *testing.T, migrations embed.FS, factory func(t
 }
 
 func NewDB[Queries any](dsn string, migrations embed.FS, factory func(tx DBTX) *Queries) (*DB[Queries], error) {
-	db, err := sql.Open("sqlite3", fmt.Sprintf(writeDSN, dsn))
+	db, err := NewDBSqlite(dsn)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open the database connection %q: %w", dsn, err)
 	}
 
 	goose.SetBaseFS(migrations)
@@ -124,7 +124,7 @@ func (db *DB[Queries]) transaction(ctx context.Context, rdbms *sql.DB, f func(qu
 		if rbErr := tx.Rollback(); rbErr != nil {
 			err = errors.Join(err, rbErr)
 		}
-		
+
 		return err
 	}
 
@@ -133,4 +133,13 @@ func (db *DB[Queries]) transaction(ctx context.Context, rdbms *sql.DB, f func(qu
 
 func NoRows(err error) bool {
 	return err != nil && errors.Is(err, sql.ErrNoRows)
+}
+
+func NewDBSqlite(dsn string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite3", fmt.Sprintf(writeDSN, dsn))
+	if err != nil {
+		return nil, fmt.Errorf("failed to open the database connection %q: %w", dsn, err)
+	}
+
+	return db, nil
 }

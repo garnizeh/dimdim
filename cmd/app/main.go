@@ -19,6 +19,7 @@ import (
 	"github.com/garnizeH/dimdim/pkg/logger"
 	"github.com/garnizeH/dimdim/pkg/mailer"
 	"github.com/garnizeH/dimdim/pkg/web"
+	"github.com/garnizeH/dimdim/service"
 	"github.com/garnizeH/dimdim/storage"
 	"github.com/garnizeH/dimdim/storage/datastore"
 
@@ -84,8 +85,11 @@ func run(ctx context.Context, log *logger.Logger) error {
 		Debug struct {
 			Host string `conf:"default:0.0.0.0:3010"`
 		}
-		DB struct {
-			DSN string `conf:"default:dimdim.db"`
+		DBApp struct {
+			DSN string `conf:"default:tmp/data/app.db"`
+		}
+		DBSessions struct {
+			DSN string `conf:"default:tmp/data/sessions.db"`
 		}
 		Mailer struct {
 			Addr     string `conf:"default:localhost:1025"`
@@ -119,8 +123,8 @@ func run(ctx context.Context, log *logger.Logger) error {
 	// -------------------------------------------------------------------------
 	// App Starting
 
-	log.Info(ctx, "starting service", "version", cfg.Build)
-	defer log.Info(ctx, "shutdown complete")
+	log.Info(ctx, "app started", "version", cfg.Build)
+	defer log.Info(ctx, "app finished")
 
 	out, err := conf.String(&cfg)
 	if err != nil {
@@ -132,9 +136,9 @@ func run(ctx context.Context, log *logger.Logger) error {
 	// -------------------------------------------------------------------------
 	// Database Support
 
-	log.Info(ctx, "startup", "status", "initializing database support", "dsn", cfg.DB.DSN)
+	log.Info(ctx, "startup", "status", "initializing database support", "dsn", cfg.DBApp.DSN)
 
-	db, err := storage.NewDB(cfg.DB.DSN, datastore.Migrations, datastore.Factory)
+	db, err := storage.NewDB(cfg.DBApp.DSN, datastore.Migrations, datastore.Factory)
 	if err != nil {
 		return fmt.Errorf("failed to connect to the database: %w", err)
 	}
@@ -179,6 +183,13 @@ func run(ctx context.Context, log *logger.Logger) error {
 	)
 
 	// -------------------------------------------------------------------------
+	// Service Support
+
+	log.Info(ctx, "startup", "status", "initializing service support")
+
+	service := service.New(argon, mailer, db)
+
+	// -------------------------------------------------------------------------
 	// Start Debug Service
 
 	go func() {
@@ -193,7 +204,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	// -------------------------------------------------------------------------
 	// Start Web Service
 
-	log.Info(ctx, "startup", "status", "initializing web service")
+	log.Info(ctx, "startup", "status", "initializing web server")
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
@@ -203,6 +214,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		Domain:      cfg.Web.DomainName,
 		Port:        cfg.Web.Port,
 		BindAddress: cfg.Web.BindAddress,
+		SessionsDSN: cfg.DBSessions.DSN,
 
 		ReadTimeout:     cfg.Web.ReadTimeout,
 		WriteTimeout:    cfg.Web.WriteTimeout,
@@ -212,12 +224,18 @@ func run(ctx context.Context, log *logger.Logger) error {
 		CORSAllowedOrigins: cfg.Web.CORSAllowedOrigins,
 	}
 
-	server := server.NewWebServer(serverCfg, argon, db, mailer)
+	server := server.NewWebServer(serverCfg, service)
+	defer func() {
+		log.Info(ctx, "shutdown", "status", "stopping web server")
+		if err := server.Close(); err != nil {
+			log.Error(ctx, "shutdown", "status", "failed to close the database", "error", err)
+		}
+	}()
 
 	serverErrors := make(chan error, 1)
 
 	go func() {
-		log.Info(ctx, "startup", "status", "api router started", "host", serverCfg.FullDomain())
+		log.Info(ctx, "startup", "status", "starting web server", "host", serverCfg.FullDomain())
 
 		serverErrors <- server.Start(serverCfg.Address())
 	}()
@@ -230,8 +248,8 @@ func run(ctx context.Context, log *logger.Logger) error {
 		return fmt.Errorf("server error: %w", err)
 
 	case sig := <-shutdown:
-		log.Info(ctx, "shutdown", "status", "shutdown started", "signal", sig)
-		defer log.Info(ctx, "shutdown", "status", "shutdown complete", "signal", sig)
+		log.Info(ctx, "shutdown", "status", "starting app shutdown", "signal", sig)
+		defer log.Info(ctx, "shutdown", "status", "app shutdown complete", "signal", sig)
 
 		ctx, cancel := context.WithTimeout(ctx, cfg.Web.ShutdownTimeout)
 		defer cancel()

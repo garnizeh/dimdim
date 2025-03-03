@@ -6,15 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alexedwards/scs/sqlite3store"
-	"github.com/alexedwards/scs/v2"
 	"github.com/garnizeH/dimdim/embeded"
-	"github.com/garnizeH/dimdim/pkg/argon2id"
 	"github.com/garnizeH/dimdim/pkg/domain"
-	"github.com/garnizeH/dimdim/pkg/mailer"
-	"github.com/garnizeH/dimdim/service/user"
-	"github.com/garnizeH/dimdim/storage"
-	"github.com/garnizeH/dimdim/storage/datastore"
+	"github.com/garnizeH/dimdim/service"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	session "github.com/spazzymoto/echo-scs-session"
@@ -25,6 +19,7 @@ type Config struct {
 	Domain      string
 	Port        string
 	BindAddress string
+	SessionsDSN string
 
 	ReadTimeout     time.Duration
 	WriteTimeout    time.Duration
@@ -61,13 +56,16 @@ func (c Config) IsLocalhost() bool {
 
 type Server struct {
 	*echo.Echo
+	sessionManager *SessionManager
+}
+
+func (s Server) Stop() error {
+	return s.sessionManager.Close()
 }
 
 func NewWebServer(
 	cfg Config,
-	argon *argon2id.Argon2idHash,
-	db *storage.DB[datastore.Queries],
-	mailer *mailer.Mailer,
+	service *service.Service,
 ) Server {
 	e := echo.New()
 
@@ -104,24 +102,18 @@ func NewWebServer(
 	}))
 
 	// Setup session handling.
-	sessionManager := scs.New()
-	sessionManager.Store = sqlite3store.New(db.RDBMS())
-	sessionManager.Lifetime = 24 * time.Hour * 7
-	sessionManager.IdleTimeout = 24 * time.Hour
-	sessionManager.Cookie.Name = "_s"
-	sessionManager.Cookie.HttpOnly = true
-	sessionManager.Cookie.Path = "/"
-	sessionManager.Cookie.Persist = true
-	sessionManager.Cookie.Secure = true
-	sessionManager.Cookie.SameSite = http.SameSiteLaxMode
-	e.Use(session.LoadAndSave(sessionManager))
+	sm, err := newSessionManager(cfg.SessionsDSN)
+	if err != nil {
+		panic(err)
+	}
 
-	users := user.New(argon, mailer, db)
-	e.Use(sessionDataMiddleware(sessionManager, users, cfg.AppName))
+	sessionManager := sm.SessionManager()
+	e.Use(session.LoadAndSave(sessionManager))
+	e.Use(sessionDataMiddleware(sessionManager, service.User(), cfg.AppName))
 
 	// Setup handler.
 	domain := domain.Domain(cfg.FullDomain())
-	handlers := NewHandler(domain, sessionManager, users)
+	handlers := NewHandler(domain, sessionManager, service)
 	handlers.LoadRoutes(e, templates)
 
 	// Setup static page serving.
@@ -143,5 +135,8 @@ func NewWebServer(
 	})
 	staticG.StaticFS("/", embeded.Static())
 
-	return Server{Echo: e}
+	return Server{
+		Echo:           e,
+		sessionManager: sm,
+	}
 }

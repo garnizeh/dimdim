@@ -64,7 +64,7 @@ func (h *Handler) Signin(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	u, err := h.user.Signin(ctx, r.Email, r.Password)
+	u, err := h.service.User().Signin(ctx, r.Email, r.Password)
 	if err != nil {
 		setFields()
 		return h.errTmpl("signin", err.Error())
@@ -130,7 +130,7 @@ func (h *Handler) Signup(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	err := h.user.Signup(ctx, h.baseURL, r.Email, r.Name, r.Password)
+	err := h.service.User().Signup(ctx, h.baseURL, r.Email, r.Name, r.Password)
 	if err != nil {
 		setFields()
 		return h.errTmpl("signup", err.Error())
@@ -143,7 +143,7 @@ func (h *Handler) SignupToken(c echo.Context) error {
 	token := c.Param("token")
 
 	ctx := c.Request().Context()
-	u, err := h.user.ValidateSignupToken(ctx, token)
+	u, err := h.service.User().ValidateSignupToken(ctx, token)
 	if err != nil {
 		return h.errTmpl("resend-signup-token", err.Error())
 	}
@@ -197,7 +197,7 @@ func (h *Handler) ResendSignupToken(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	err := h.user.ResendSignupToken(ctx, h.baseURL, r.Email)
+	err := h.service.User().ResendSignupToken(ctx, h.baseURL, r.Email)
 	if err != nil {
 		setFields()
 
@@ -244,7 +244,7 @@ func (h *Handler) ResetPassword(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	err := h.user.ResetPassword(ctx, h.baseURL, r.Email)
+	err := h.service.User().ResetPassword(ctx, h.baseURL, r.Email)
 	if err != nil {
 		setFields()
 
@@ -258,7 +258,7 @@ func (h *Handler) ResetPasswordToken(c echo.Context) error {
 	token := c.Param("token")
 
 	ctx := c.Request().Context()
-	if err := h.user.ResetPasswordToken(ctx, token); err != nil {
+	if err := h.service.User().ResetPasswordToken(ctx, token); err != nil {
 		return h.errTmpl("reset-password", err.Error())
 	}
 
@@ -312,7 +312,7 @@ func (h *Handler) ChangePassword(c echo.Context) error {
 
 	ctx := c.Request().Context()
 	email := h.sess.GetString(ctx, contextKeyEmail)
-	if err := h.user.ChangePassword(ctx, email, r.Password); err != nil {
+	if err := h.service.User().ChangePassword(ctx, email, r.Password); err != nil {
 		setFields()
 
 		return h.errTmpl("change-password", err.Error())
@@ -366,7 +366,7 @@ func (h *Handler) ChangePasswordWithToken(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	u, err := h.user.ChangePasswordWithToken(ctx, r.Token, r.Password)
+	u, err := h.service.User().ChangePasswordWithToken(ctx, r.Token, r.Password)
 	if err != nil {
 		setFields()
 

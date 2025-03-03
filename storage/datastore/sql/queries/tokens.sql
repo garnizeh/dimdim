@@ -2,10 +2,6 @@
 INSERT INTO tokens (token, type, email, expires_at)
             VALUES (?    , ?   , ?    , ?);
 
--- name: DeleteToken :exec
-UPDATE tokens SET deleted_at = CAST(unixepoch('subsecond') * 1000 AS INTEGER)
-WHERE token = ?;
-
 -- name: DeleteExpiredTokens :exec
 UPDATE tokens SET deleted_at = CAST(unixepoch('subsecond') * 1000 AS INTEGER)
 WHERE expires_at <= ?;
