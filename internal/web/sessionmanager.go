@@ -22,14 +22,15 @@ func newSessionManager(dsn string) (*SessionManager, error) {
 		return nil, err
 	}
 
-	q := `CREATE TABLE IF NOT EXISTS sessions (
+	const migrate = `
+    CREATE TABLE IF NOT EXISTS sessions (
 		token TEXT PRIMARY KEY,
 		data BLOB NOT NULL,
 		expiry REAL NOT NULL
 	);
-	CREATE INDEX sessions_expiry_idx ON sessions(expiry);`
+	CREATE INDEX IF NOT EXISTS sessions_expiry_idx ON sessions(expiry);`
 
-	if _, err = db.Exec(q); err != nil {
+	if _, err = db.Exec(migrate); err != nil {
 		return nil, fmt.Errorf("failed to create sessions table: %w", err)
 	}
 
