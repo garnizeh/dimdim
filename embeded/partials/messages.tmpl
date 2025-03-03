@@ -1,13 +1,13 @@
 {{define "messages"}}
-    <div>
+    <div style="padding:1em;">
         {{if .ErrMsg}}
-                <h4 class="pico-color-red-200">
+                <h4 class="alert alert-danger">
                     <center><b>error:</b> {{safeHTML .ErrMsg}}</center>
                 </h4>
         {{end}}
 
         {{if .FlashMsg}}
-                <h4 class="pico-color-green-200">
+                <h4 class="alert alert-success">
                     <center>{{safeHTML .FlashMsg}}</center>
                 </h4>
         {{end}}
