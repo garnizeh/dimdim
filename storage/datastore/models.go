@@ -27,7 +27,6 @@ type Token struct {
 }
 
 type User struct {
-	ID         string
 	Email      string
 	Name       string
 	Password   []byte

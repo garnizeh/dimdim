@@ -41,6 +41,16 @@ func (q *Queries) DeleteExpiredTokens(ctx context.Context, expiresAt int64) erro
 	return err
 }
 
+const deletePasswordTokensByEmail = `-- name: DeletePasswordTokensByEmail :exec
+UPDATE tokens SET deleted_at = CAST(unixepoch('subsecond') * 1000 AS INTEGER)
+WHERE email = ? AND type = 'PASSWORD'
+`
+
+func (q *Queries) DeletePasswordTokensByEmail(ctx context.Context, email string) error {
+	_, err := q.db.ExecContext(ctx, deletePasswordTokensByEmail, email)
+	return err
+}
+
 const deleteSignupTokensByEmail = `-- name: DeleteSignupTokensByEmail :exec
 UPDATE tokens SET deleted_at = CAST(unixepoch('subsecond') * 1000 AS INTEGER)
 WHERE email = ? AND type = 'SIGNUP'
@@ -59,6 +69,29 @@ WHERE token = ?
 func (q *Queries) DeleteToken(ctx context.Context, token string) error {
 	_, err := q.db.ExecContext(ctx, deleteToken, token)
 	return err
+}
+
+const getPasswordTokenNotExpired = `-- name: GetPasswordTokenNotExpired :one
+SELECT token, type, email, expires_at, deleted_at FROM tokens
+WHERE token = ? AND type = 'PASSWORD' AND expires_at >= ? AND deleted_at = 0
+`
+
+type GetPasswordTokenNotExpiredParams struct {
+	Token     string
+	ExpiresAt int64
+}
+
+func (q *Queries) GetPasswordTokenNotExpired(ctx context.Context, arg GetPasswordTokenNotExpiredParams) (Token, error) {
+	row := q.db.QueryRowContext(ctx, getPasswordTokenNotExpired, arg.Token, arg.ExpiresAt)
+	var i Token
+	err := row.Scan(
+		&i.Token,
+		&i.Type,
+		&i.Email,
+		&i.ExpiresAt,
+		&i.DeletedAt,
+	)
+	return i, err
 }
 
 const getSignupTokenNotExpired = `-- name: GetSignupTokenNotExpired :one

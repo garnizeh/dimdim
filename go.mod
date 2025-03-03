@@ -11,7 +11,6 @@ require (
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/microcosm-cc/bluemonday v1.0.27
-	github.com/oklog/ulid v1.3.1
 	github.com/pressly/goose/v3 v3.24.1
 	github.com/spazzymoto/echo-scs-session v1.0.0
 	golang.org/x/crypto v0.35.0

@@ -10,12 +10,11 @@ import (
 )
 
 const createUser = `-- name: CreateUser :exec
-INSERT INTO users (id, email, name, password, salt)
-           VALUES (? , ?    , ?   , ?       , ?)
+INSERT INTO users (email, name, password, salt)
+           VALUES (?    , ?   , ?       , ?)
 `
 
 type CreateUserParams struct {
-	ID       string
 	Email    string
 	Name     string
 	Password []byte
@@ -24,7 +23,6 @@ type CreateUserParams struct {
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
 	_, err := q.db.ExecContext(ctx, createUser,
-		arg.ID,
 		arg.Email,
 		arg.Name,
 		arg.Password,
@@ -35,22 +33,22 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
 
 const deleteUser = `-- name: DeleteUser :exec
 UPDATE users SET updated_at = CAST(unixepoch('subsecond') * 1000 as int), deleted_at = CAST(unixepoch('subsecond') * 1000 AS INTEGER)
-WHERE id = ?
+WHERE email = ?
 `
 
-func (q *Queries) DeleteUser(ctx context.Context, id string) error {
-	_, err := q.db.ExecContext(ctx, deleteUser, id)
+func (q *Queries) DeleteUser(ctx context.Context, email string) error {
+	_, err := q.db.ExecContext(ctx, deleteUser, email)
 	return err
 }
 
 const getAllUsers = `-- name: GetAllUsers :many
-SELECT id, email, name, password, salt, created_at, updated_at, verified_at, deleted_at FROM users
-WHERE id = ? AND deleted_at > 0
+SELECT email, name, password, salt, created_at, updated_at, verified_at, deleted_at FROM users
+WHERE email = ? AND deleted_at > 0
 ORDER BY name
 `
 
-func (q *Queries) GetAllUsers(ctx context.Context, id string) ([]User, error) {
-	rows, err := q.db.QueryContext(ctx, getAllUsers, id)
+func (q *Queries) GetAllUsers(ctx context.Context, email string) ([]User, error) {
+	rows, err := q.db.QueryContext(ctx, getAllUsers, email)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +57,6 @@ func (q *Queries) GetAllUsers(ctx context.Context, id string) ([]User, error) {
 	for rows.Next() {
 		var i User
 		if err := rows.Scan(
-			&i.ID,
 			&i.Email,
 			&i.Name,
 			&i.Password,
@@ -82,38 +79,15 @@ func (q *Queries) GetAllUsers(ctx context.Context, id string) ([]User, error) {
 	return items, nil
 }
 
-const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, name, password, salt, created_at, updated_at, verified_at, deleted_at FROM users
+const getUser = `-- name: GetUser :one
+SELECT  email, name, password, salt, created_at, updated_at, verified_at, deleted_at FROM users
 WHERE email = ? AND deleted_at = 0
 `
 
-func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUserByEmail, email)
+func (q *Queries) GetUser(ctx context.Context, email string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUser, email)
 	var i User
 	err := row.Scan(
-		&i.ID,
-		&i.Email,
-		&i.Name,
-		&i.Password,
-		&i.Salt,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.VerifiedAt,
-		&i.DeletedAt,
-	)
-	return i, err
-}
-
-const getUserByID = `-- name: GetUserByID :one
-SELECT  id, email, name, password, salt, created_at, updated_at, verified_at, deleted_at FROM users
-WHERE id = ? AND deleted_at = 0
-`
-
-func (q *Queries) GetUserByID(ctx context.Context, id string) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUserByID, id)
-	var i User
-	err := row.Scan(
-		&i.ID,
 		&i.Email,
 		&i.Name,
 		&i.Password,
@@ -128,11 +102,11 @@ func (q *Queries) GetUserByID(ctx context.Context, id string) (User, error) {
 
 const getUserIsDeleted = `-- name: GetUserIsDeleted :one
 SELECT true FROM users
-WHERE id = ? AND deleted_at > 0
+WHERE email = ? AND deleted_at > 0
 `
 
-func (q *Queries) GetUserIsDeleted(ctx context.Context, id string) (int64, error) {
-	row := q.db.QueryRowContext(ctx, getUserIsDeleted, id)
+func (q *Queries) GetUserIsDeleted(ctx context.Context, email string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getUserIsDeleted, email)
 	var column_1 int64
 	err := row.Scan(&column_1)
 	return column_1, err
@@ -140,11 +114,11 @@ func (q *Queries) GetUserIsDeleted(ctx context.Context, id string) (int64, error
 
 const getUserIsVerified = `-- name: GetUserIsVerified :one
 SELECT true FROM users
-WHERE id = ? AND deleted_at = 0 AND verified_at > 0
+WHERE email = ? AND deleted_at = 0 AND verified_at > 0
 `
 
-func (q *Queries) GetUserIsVerified(ctx context.Context, id string) (int64, error) {
-	row := q.db.QueryRowContext(ctx, getUserIsVerified, id)
+func (q *Queries) GetUserIsVerified(ctx context.Context, email string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getUserIsVerified, email)
 	var column_1 int64
 	err := row.Scan(&column_1)
 	return column_1, err
@@ -153,14 +127,13 @@ func (q *Queries) GetUserIsVerified(ctx context.Context, id string) (int64, erro
 const setUserIsVerified = `-- name: SetUserIsVerified :one
 UPDATE users SET verified_at = CAST(unixepoch('subsecond') * 1000 AS INTEGER), updated_at = CAST(unixepoch('subsecond') * 1000 AS INTEGER)
 WHERE email = ?
-RETURNING id, email, name, password, salt, created_at, updated_at, verified_at, deleted_at
+RETURNING email, name, password, salt, created_at, updated_at, verified_at, deleted_at
 `
 
 func (q *Queries) SetUserIsVerified(ctx context.Context, email string) (User, error) {
 	row := q.db.QueryRowContext(ctx, setUserIsVerified, email)
 	var i User
 	err := row.Scan(
-		&i.ID,
 		&i.Email,
 		&i.Name,
 		&i.Password,
@@ -175,32 +148,44 @@ func (q *Queries) SetUserIsVerified(ctx context.Context, email string) (User, er
 
 const updateUser = `-- name: UpdateUser :exec
 UPDATE users SET email = ?, name = ?, updated_at = CAST(unixepoch('subsecond') * 1000 AS INTEGER)
-WHERE id = ?
+WHERE email = ?
 `
 
 type UpdateUserParams struct {
-	Email string
-	Name  string
-	ID    string
+	Email   string
+	Name    string
+	Email_2 string
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
-	_, err := q.db.ExecContext(ctx, updateUser, arg.Email, arg.Name, arg.ID)
+	_, err := q.db.ExecContext(ctx, updateUser, arg.Email, arg.Name, arg.Email_2)
 	return err
 }
 
-const updateUserPassword = `-- name: UpdateUserPassword :exec
+const updateUserPassword = `-- name: UpdateUserPassword :one
 UPDATE users SET password = ?, salt = ?, updated_at = CAST(unixepoch('subsecond') * 1000 AS INTEGER)
-WHERE id = ?
+WHERE email = ?
+RETURNING email, name, password, salt, created_at, updated_at, verified_at, deleted_at
 `
 
 type UpdateUserPasswordParams struct {
 	Password []byte
 	Salt     []byte
-	ID       string
+	Email    string
 }
 
-func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
-	_, err := q.db.ExecContext(ctx, updateUserPassword, arg.Password, arg.Salt, arg.ID)
-	return err
+func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateUserPassword, arg.Password, arg.Salt, arg.Email)
+	var i User
+	err := row.Scan(
+		&i.Email,
+		&i.Name,
+		&i.Password,
+		&i.Salt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.VerifiedAt,
+		&i.DeletedAt,
+	)
+	return i, err
 }
