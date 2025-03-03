@@ -1,0 +1,26 @@
+{{define "content"}}
+    <div style="padding-top: 20%">
+        {{if or .ErrMsg .FlashMsg}}
+            <hgroup style="margin-bottom:0">
+        {{end}}
+
+        <h1><center>Request a new confirmation email</center></h1>
+
+        {{if or .ErrMsg .FlashMsg}}
+                {{ block "messages" .}}{{ end}}
+
+            </hgroup>
+        {{end}}
+
+        <form method="post" action="/auth/resend-confirmation-email">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
+
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="email address" value="{{if .Fields}}{{.Fields.Email}}{{end}}" required>
+
+            <button type="submit">Submit</button>
+        </form>
+        <p><center>Don't have an account? <a href="/auth/signup">Signup.</a></center></p>
+        <p><center>Already have an account? <a href="/auth/signup">Signin.</a></center></p>
+    </div>
+{{end}}

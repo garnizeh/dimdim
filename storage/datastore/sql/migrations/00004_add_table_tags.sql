@@ -3,11 +3,11 @@
 CREATE TABLE IF NOT EXISTS tags (
   id         INTEGER PRIMARY KEY,
   name       TEXT    NOT NULL UNIQUE,
-  created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL,
+  created_at INTEGER NOT NULL DEFAULT (unixepoch('subsecond') * 1000),
+  updated_at INTEGER NOT NULL DEFAULT (unixepoch('subsecond') * 1000),
   deleted_at INTEGER NOT NULL DEFAULT 0
 );
-CREATE INDEX idx_tags_name ON tags (name);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_tags_name ON tags (name);
 -- +goose StatementEnd
 
 -- +goose Down

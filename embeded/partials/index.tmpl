@@ -1,0 +1,10 @@
+{{define "content"}}
+    <div>
+        {{if or .ErrMsg .FlashMsg}}
+        <hgroup style="margin-bottom:0">
+        {{end}}
+            <h1><center>Welcome to the jungle, {{.Name}}</center></h1>
+
+        {{ block "messages" .}}{{ end}}
+    </div>
+{{end}}

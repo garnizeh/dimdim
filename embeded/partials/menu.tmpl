@@ -1,0 +1,12 @@
+{{define "menu"}}
+    {{if .Name}}
+        <details class="dropdown" style="text-align:right">
+            <summary>{{.Name}}</summary>
+	        <ul>
+        	    <li><a href="/auth/signout">Sign out</a></li>
+            </ul>
+        </details>
+	{{else}}
+		    <li><a href="/auth/signin">Sign in</a></li>
+	{{end}}
+{{end}}
