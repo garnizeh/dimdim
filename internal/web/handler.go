@@ -83,6 +83,11 @@ func (h *Handler) loadRoutesAuth(g *echo.Group, templates *embeded.Template) {
 	templates.NewView("resend-signup-token", "base.tmpl", "messages.tmpl", "auth-links.tmpl", "auth/resend-signup-token.tmpl")
 	g.GET("/resend-confirmation-email", pageRenderer("resend-signup-token"), signedOutMiddleware)
 	g.POST("/resend-confirmation-email", h.ResendSignupToken, signedOutMiddleware)
+
+	// change password
+	templates.NewView("change-password", "base.tmpl", "messages.tmpl", "auth/change-password.tmpl")
+	g.GET("/change-password", pageRenderer("change-password"), signedInMiddleware)
+	g.POST("/change-password", h.ChangePassword, signedInMiddleware)
 }
 
 type validator interface {

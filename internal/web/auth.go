@@ -275,12 +275,59 @@ func (h *Handler) ResetPasswordToken(c echo.Context) error {
 }
 
 type changePasswordRequest struct {
-	Token    string `form:"token"`
 	Password string `form:"password"`
 	Confirm  string `form:"confirm"`
 }
 
 func (r *changePasswordRequest) validate(c echo.Context, input *bluemonday.Policy) error {
+	r.Password = strings.TrimSpace(r.Password)
+	r.Confirm = strings.TrimSpace(r.Confirm)
+	if r.Password == "" || len(r.Password) < minPasswordLength {
+		return ErrInvalidPassword
+	}
+	if r.Password != r.Confirm {
+		return ErrNotMatchPasswords
+	}
+
+	return nil
+}
+
+func (h *Handler) ChangePassword(c echo.Context) error {
+	r := changePasswordRequest{}
+
+	setFields := func() {
+		setSessionDataFields(c, struct {
+			Password string
+			Confirm  string
+		}{
+			Password: r.Password,
+			Confirm:  r.Confirm,
+		})
+	}
+
+	if err := h.validateRequest(c, &r, "change-password"); err != nil {
+		setFields()
+		return err
+	}
+
+	ctx := c.Request().Context()
+	email := h.sess.GetString(ctx, contextKeyEmail)
+	if err := h.user.ChangePassword(ctx, email, r.Password); err != nil {
+		setFields()
+
+		return h.errTmpl("change-password", err.Error())
+	}
+
+	return pageRendererWithFlashMsg(c, "index", "password updated")
+}
+
+type changePasswordWithTokenRequest struct {
+	Token    string `form:"token"`
+	Password string `form:"password"`
+	Confirm  string `form:"confirm"`
+}
+
+func (r *changePasswordWithTokenRequest) validate(c echo.Context, input *bluemonday.Policy) error {
 	r.Token = strings.TrimSpace(r.Token)
 	if r.Token == "" {
 		return ErrInvalidToken
@@ -299,7 +346,7 @@ func (r *changePasswordRequest) validate(c echo.Context, input *bluemonday.Polic
 }
 
 func (h *Handler) ChangePasswordWithToken(c echo.Context) error {
-	r := changePasswordRequest{}
+	r := changePasswordWithTokenRequest{}
 
 	setFields := func() {
 		setSessionDataFields(c, struct {
@@ -322,7 +369,7 @@ func (h *Handler) ChangePasswordWithToken(c echo.Context) error {
 	u, err := h.user.ChangePasswordWithToken(ctx, r.Token, r.Password)
 	if err != nil {
 		setFields()
-		
+
 		return h.errTmpl("reset-password-token", err.Error())
 	}
 
