@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="msapplication-TileColor" content="#000000">
+    <meta name="description" content="Create short links for your long urls. Create an account and have them be ad-free!">
+    <link rel="stylesheet" href="/static/css/roboto-700.min.css" async defer >
+    <link rel="stylesheet" href="/static/css/pico.min.css" async defer>
+    <link rel="stylesheet" href="/static/css/pico.colors.min.css" async defer>
+    <link rel="stylesheet" href="/static/css/app.css" async defer>
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon/favicon-16x16.png">
+    <link rel="manifest" href="/static/favicon/site.webmanifest">
+    <title>{{.AppName}}</title>
+</head>
+
+<body>
+    {{if .ID}}
+        <header class="container" style="padding:1rem;padding-bottom:0;">
+            <nav>
+                <ul>
+                    <a href="/">{{.AppName}}</a>
+                </ul>
+                <ul>
+                    {{block "menu" .}}{{end}}
+                </ul>
+            </nav>
+            <hr>
+        </header>
+    {{end}}
+
+	<main class="container" style="padding:1rem;padding-top:0;">
+        {{block "content" .}}
+        {{end}}
+	</main>
+
+    <footer class="container" style="padding-top:0">
+        <center>
+            &copy; 2025 garnizeH
+        </center>
+    </footer>
+</body>

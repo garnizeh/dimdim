@@ -1,3 +1,7 @@
+.vscode/
 vendor/
 tmp/
 bin/
+cmd/app/dimdim.db
+cmd/app/dimdim.db-shm
+cmd/app/dimdim.db-wal

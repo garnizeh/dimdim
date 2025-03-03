@@ -1,0 +1,15 @@
+{{define "messages"}}
+    <div>
+        {{if .ErrMsg}}
+                <h4 class="pico-color-red-200">
+                    <center><b>error:</b> {{safeHTML .ErrMsg}}</center>
+                </h4>
+        {{end}}
+
+        {{if .FlashMsg}}
+                <h4 class="pico-color-green-200">
+                    <center>{{safeHTML .FlashMsg}}</center>
+                </h4>
+        {{end}}
+    </div>
+{{end}}
