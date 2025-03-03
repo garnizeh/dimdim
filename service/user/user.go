@@ -331,6 +331,41 @@ func (s *Service) ResetPasswordToken(
 	return nil
 }
 
+func (s *Service) ChangePassword(
+	ctx context.Context,
+	email string,
+	password string,
+) error {
+	var user datastore.User
+	if err := s.db.Read(ctx, func(queries *datastore.Queries) error {
+		hashSalt, err := s.argon.GenerateHash([]byte(password), nil)
+		if err != nil {
+			return fmt.Errorf("failed to hash the password: %w", err)
+		}
+
+		user, err = queries.UpdateUserPassword(ctx, datastore.UpdateUserPasswordParams{
+			Email:    email,
+			Password: hashSalt.Hash,
+			Salt:     hashSalt.Salt,
+		})
+		if err != nil {
+			if storage.NoRows(err) {
+				return ErrEmailNotFound
+			}
+
+			return err
+		}
+
+		_ = s.updateCache(user)
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *Service) ChangePasswordWithToken(
 	ctx context.Context,
 	token string,

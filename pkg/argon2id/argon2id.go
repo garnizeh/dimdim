@@ -9,6 +9,13 @@ import (
 	"golang.org/x/crypto/argon2"
 )
 
+var (
+	ErrInvalidPassword  = errors.New("invalid password")
+	ErrInvalidHash      = errors.New("invalid hash")
+	ErrInvalidSalt      = errors.New("invalid salt")
+	ErrPasswordNotMatch = errors.New("password doesn't match")
+)
+
 // HashSalt struct used to store
 // generated hash and salt used to
 // generate the hash.
@@ -54,6 +61,10 @@ func NewWithDefault() *Argon2idHash {
 // If not salt value provided fallback to random value
 // generated of a given length.
 func (a *Argon2idHash) GenerateHash(password, salt []byte) (*HashSalt, error) {
+	if len(password) == 0 {
+		return nil, ErrInvalidPassword
+	}
+
 	var err error
 	// If salt is not provided generate a salt of
 	// the configured salt length.
@@ -71,6 +82,16 @@ func (a *Argon2idHash) GenerateHash(password, salt []byte) (*HashSalt, error) {
 
 // Compare generated hash with store hash.
 func (a *Argon2idHash) Compare(hash, salt, password []byte) error {
+	if len(hash) == 0 {
+		return ErrInvalidHash
+	}
+	if len(salt) == 0 {
+		return ErrInvalidSalt
+	}
+	if len(password) == 0 {
+		return ErrInvalidPassword
+	}
+
 	// Generate hash for comparison.
 	hashSalt, err := a.GenerateHash(password, salt)
 	if err != nil {
@@ -79,8 +100,9 @@ func (a *Argon2idHash) Compare(hash, salt, password []byte) error {
 	// Compare the generated hash with the stored hash.
 	// If they don't match return error.
 	if !bytes.Equal(hash, hashSalt.Hash) {
-		return errors.New("hash doesn't match")
+		return ErrPasswordNotMatch
 	}
+	
 	return nil
 }
 
